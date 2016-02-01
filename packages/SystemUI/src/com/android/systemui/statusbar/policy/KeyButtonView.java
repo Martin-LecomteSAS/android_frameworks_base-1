@@ -28,6 +28,7 @@ import android.hardware.input.InputManager;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.PowerManager;
+import android.os.SystemProperties;
 import android.os.SystemClock;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -72,6 +73,8 @@ public class KeyButtonView extends ImageView {
 
     private PowerManager mPm;
     private boolean mPerformedLongClick;
+
+    private boolean mPwbtnForceShutdownprop = SystemProperties.getBoolean("persist.pwbtn.shutdown", false);
 
     private final Runnable mCheckLongPress = new Runnable() {
         public void run() {
@@ -262,10 +265,16 @@ public class KeyButtonView extends ImageView {
             return false;
         }
         final int action = ev.getAction();
-        int x, y;
+        int x, y, cc;
 
         // A lot of stuff is about to happen. Lets get ready.
         mPm.cpuBoost(750000);
+
+        if (!mPwbtnForceShutdownprop){
+        cc = KeyEvent.KEYCODE_POWER;
+        } else {
+        cc = 0;
+        }
 
         switch (action) {
             case MotionEvent.ACTION_DOWN:
@@ -275,7 +284,7 @@ public class KeyButtonView extends ImageView {
                 if (mCode == KeyEvent.KEYCODE_DPAD_LEFT || mCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
                     sendEvent(KeyEvent.ACTION_DOWN, KeyEvent.FLAG_VIRTUAL_HARD_KEY
                             | KeyEvent.FLAG_KEEP_TOUCH_MODE, mDownTime, false);
-                } else if (mCode != 0 && mCode != KeyEvent.KEYCODE_POWER) {
+                } else if (mCode != 0 && mCode != cc) {
                     sendEvent(KeyEvent.ACTION_DOWN, 0, mDownTime);
                 } else {
                     // Provide the same haptic feedback that the system offers for virtual keys.
@@ -283,7 +292,7 @@ public class KeyButtonView extends ImageView {
                 }
                 if (supportsLongPress()) {
                     removeCallbacks(mCheckLongPress);
-                    	if (mCode == KeyEvent.KEYCODE_POWER) {
+                        if (mCode == KeyEvent.KEYCODE_POWER && !mPwbtnForceShutdownprop) {
                     	postDelayed(mCheckLongPress, 0);
                     	}
                     	else {
@@ -311,7 +320,7 @@ public class KeyButtonView extends ImageView {
             case MotionEvent.ACTION_UP:
                 final boolean doIt = isPressed();
                 setPressed(false);
-                if (mCode != 0 && mCode != KeyEvent.KEYCODE_POWER) {
+                if (mCode != 0 && mCode != cc) {
                     if (doIt) {
                         sendEvent(KeyEvent.ACTION_UP, 0);
                         sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);

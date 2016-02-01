@@ -461,6 +461,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     // until the key is released. This is required since the beep sound is produced
     // post keypressed.
     boolean mVolumeWakeTriggered;
+    boolean mPwbtnForceShutdownprop;
 
     int mPointerLocationMode = 0; // guarded by mLock
 
@@ -1224,6 +1225,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         } else if (interactive && !mBeganFromNonInteractive) {
             switch (mShortPressOnPowerBehavior) {
                 case SHORT_PRESS_POWER_NOTHING:
+                    if (mPwbtnForceShutdownprop){
+                    mLongPressOnPowerBehavior = LONG_PRESS_POWER_GLOBAL_ACTIONS;
+                    mHandler.sendEmptyMessage(MSG_POWER_LONG_PRESS);
+                    }
                     break;
                 case SHORT_PRESS_POWER_GO_TO_SLEEP:
                     mPowerManager.goToSleep(eventTime,
@@ -1298,6 +1303,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 performAuditoryFeedbackForAccessibilityIfNeed();
             }
             showGlobalActionsInternal();
+            if (mPwbtnForceShutdownprop){
+            mLongPressOnPowerBehavior = LONG_PRESS_POWER_SHUT_OFF_NO_CONFIRM;
+            }
             break;
         case LONG_PRESS_POWER_SHUT_OFF:
         case LONG_PRESS_POWER_SHUT_OFF_NO_CONFIRM:
@@ -1310,9 +1318,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     }
 
     private int getResolvedLongPressOnPowerBehavior() {
+/*
         if (FactoryTest.isLongPressOnPowerOffEnabled()) {
             return LONG_PRESS_POWER_SHUT_OFF_NO_CONFIRM;
-        }
+*/
         return mLongPressOnPowerBehavior;
     }
 
@@ -1557,6 +1566,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         mPowerKeyWakeLock = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
                 "PhoneWindowManager.mPowerKeyWakeLock");
         mEnableShiftMenuBugReports = "1".equals(SystemProperties.get("ro.debuggable"));
+        mPwbtnForceShutdownprop = SystemProperties.getBoolean("persist.pwbtn.shutdown", false);
+
         mSupportAutoRotation = mContext.getResources().getBoolean(
                 com.android.internal.R.bool.config_supportAutoRotation);
         mLidOpenRotation = readRotation(
@@ -1599,10 +1610,16 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         mGoToSleepOnButtonPressTheaterMode = mContext.getResources().getBoolean(
                 com.android.internal.R.bool.config_goToSleepOnButtonPressTheaterMode);
 
+        if (mPwbtnForceShutdownprop){
+        mShortPressOnPowerBehavior = SHORT_PRESS_POWER_NOTHING;
+        mLongPressOnPowerBehavior = LONG_PRESS_POWER_SHUT_OFF_NO_CONFIRM;
+        } else {
         mShortPressOnPowerBehavior = mContext.getResources().getInteger(
                 com.android.internal.R.integer.config_shortPressOnPowerBehavior);
         mLongPressOnPowerBehavior = mContext.getResources().getInteger(
                 com.android.internal.R.integer.config_longPressOnPowerBehavior);
+        }
+
         mDoublePressOnPowerBehavior = mContext.getResources().getInteger(
                 com.android.internal.R.integer.config_doublePressOnPowerBehavior);
         mTriplePressOnPowerBehavior = mContext.getResources().getInteger(
