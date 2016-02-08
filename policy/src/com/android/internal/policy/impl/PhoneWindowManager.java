@@ -6239,9 +6239,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 
     private void handleHideBootMessage() {
         synchronized (mLock) {
+/*
             if (!mKeyguardDrawComplete) {
                 return; // keyguard hasn't completed drawing, not done booting.
-            }
+*/
         }
 
         if (mBootMsgDialog != null) {
